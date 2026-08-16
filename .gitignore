@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+ven/
+.venv/
+data/bronze/*.csv
+data/silver/*.csv
+data/gold/*.csv
+.env
+chromedriver

@@ -1,0 +1,41 @@
+name: Daily Leads Report
+
+on:
+  schedule:
+    - cron: "0 2 * * *"  # 02:00 UTC = 09:00 WIB
+  workflow_dispatch:
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Run pipeline
+        env:
+          CEKAT_EMAIL: ${{ secrets.CEKAT_EMAIL }}
+          CEKAT_PASSWORD: ${{ secrets.CEKAT_PASSWORD }}
+        run: |
+          python scripts/scrape_cekat.py
+          python scripts/clean.py
+          python scripts/aggregate.py
+          python scripts/load_to_sqlite.py
+
+      - name: Commit updated database
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add db/leads_report.db
+          git commit -m "chore: daily leads report $(date +'%Y-%m-%d')" || echo "No changes"
+          git push
